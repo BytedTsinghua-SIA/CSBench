@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+  <channel>
+    <title>Local Many Articles</title>
+    <item><title>Item e1</title><link>assets/e1.html</link></item>
+    <item><title>Item e2</title><link>assets/e2.html</link></item>
+    <item><title>Item e3</title><link>assets/e3.html</link></item>
+    <item><title>Item e4</title><link>assets/e4.html</link></item>
+    <item><title>Item e5</title><link>assets/e5.html</link></item>
+    <item><title>Item e6</title><link>assets/e6.html</link></item>
+    <item><title>Item e7</title><link>assets/e7.html</link></item>
+    <item><title>Item e8</title><link>assets/e8.html</link></item>
+    <item><title>Item e9</title><link>assets/e9.html</link></item>
+  </channel>
+</rss>

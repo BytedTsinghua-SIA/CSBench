@@ -1,0 +1,50 @@
+obj/ALDRAM.o: lib/ALDRAM.cpp lib/ALDRAM.h lib/DRAM.h lib/Statistics.h \
+  lib/StatType.h lib/Request.h
+obj/Cache.o: lib/Cache.cpp lib/Cache.h lib/Config.h lib/Request.h \
+  lib/Statistics.h lib/StatType.h
+obj/Config.o: lib/Config.cpp lib/Config.h
+obj/Controller.o: lib/Controller.cpp lib/Controller.h lib/Config.h \
+  lib/DRAM.h lib/Statistics.h lib/StatType.h lib/Refresh.h lib/Request.h \
+  lib/DSARP.h lib/ALDRAM.h lib/Scheduler.h lib/SALP.h lib/TLDRAM.h
+obj/DDR3.o: lib/DDR3.cpp lib/DDR3.h lib/DRAM.h lib/Statistics.h \
+  lib/StatType.h lib/Request.h
+obj/DDR4.o: lib/DDR4.cpp lib/DDR4.h lib/DRAM.h lib/Statistics.h \
+  lib/StatType.h lib/Request.h
+obj/DSARP.o: lib/DSARP.cpp lib/DSARP.h lib/DRAM.h lib/Statistics.h \
+  lib/StatType.h lib/Request.h
+obj/GDDR5.o: lib/GDDR5.cpp lib/GDDR5.h lib/DRAM.h lib/Statistics.h \
+  lib/StatType.h lib/Request.h
+obj/HBM.o: lib/HBM.cpp lib/HBM.h lib/DRAM.h lib/Statistics.h \
+  lib/StatType.h lib/Request.h
+obj/LPDDR3.o: lib/LPDDR3.cpp lib/LPDDR3.h lib/DRAM.h lib/Statistics.h \
+  lib/StatType.h lib/Request.h
+obj/LPDDR4.o: lib/LPDDR4.cpp lib/LPDDR4.h lib/DRAM.h lib/Statistics.h \
+  lib/StatType.h lib/Request.h
+obj/MemoryFactory.o: lib/MemoryFactory.cpp lib/MemoryFactory.h \
+  lib/Config.h lib/Memory.h lib/DRAM.h lib/Statistics.h lib/StatType.h \
+  lib/Request.h lib/Controller.h lib/Refresh.h lib/DSARP.h lib/ALDRAM.h \
+  lib/Scheduler.h lib/SALP.h lib/TLDRAM.h lib/SpeedyController.h \
+  lib/GDDR5.h lib/HBM.h lib/LPDDR3.h lib/LPDDR4.h lib/WideIO2.h \
+  lib/WideIO.h
+obj/PCM.o: lib/PCM.cpp lib/PCM.h lib/DRAM.h lib/Statistics.h \
+  lib/StatType.h lib/Request.h
+obj/Processor.o: lib/Processor.cpp lib/Processor.h lib/Cache.h \
+  lib/Config.h lib/Request.h lib/Statistics.h lib/StatType.h \
+  lib/Memory.h lib/DRAM.h lib/Controller.h lib/Refresh.h lib/DSARP.h \
+  lib/ALDRAM.h lib/Scheduler.h lib/SALP.h lib/TLDRAM.h \
+  lib/SpeedyController.h lib/GDDR5.h lib/HBM.h lib/LPDDR3.h lib/LPDDR4.h \
+  lib/WideIO2.h
+obj/Refresh.o: lib/Refresh.cpp lib/Refresh.h lib/Request.h lib/DSARP.h \
+  lib/DRAM.h lib/Statistics.h lib/StatType.h lib/ALDRAM.h \
+  lib/Controller.h lib/Config.h lib/Scheduler.h lib/SALP.h lib/TLDRAM.h
+obj/SALP.o: lib/SALP.cpp lib/SALP.h lib/DRAM.h lib/Statistics.h \
+  lib/StatType.h lib/Request.h
+obj/STTMRAM.o: lib/STTMRAM.cpp lib/STTMRAM.h lib/DRAM.h lib/Statistics.h \
+  lib/StatType.h lib/Request.h
+obj/StatType.o: lib/StatType.cpp lib/StatType.h
+obj/TLDRAM.o: lib/TLDRAM.cpp lib/TLDRAM.h lib/DRAM.h lib/Statistics.h \
+  lib/StatType.h lib/Request.h
+obj/WideIO.o: lib/WideIO.cpp lib/WideIO.h lib/DRAM.h lib/Statistics.h \
+  lib/StatType.h lib/Request.h
+obj/WideIO2.o: lib/WideIO2.cpp lib/WideIO2.h lib/DRAM.h lib/Statistics.h \
+  lib/StatType.h lib/Request.h

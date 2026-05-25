@@ -1,0 +1,72 @@
+#include "cache.h"
+
+#define IP_TRACKER_COUNT 1024
+#define SPATIAL_PATTERN_SIZE 64
+#define CONFIDENCE_THRESHOLD 2
+#define MAX_PREFETCH_DEGREE 4
+
+class IP_TRACKER {
+public:
+    uint64_t ip;
+    uint64_t last_cl_addr;
+    int64_t last_stride;
+    uint32_t stride_confidence;
+    uint32_t lru;
+    
+    IP_TRACKER() {
+        ip = 0;
+        last_cl_addr = 0;
+        last_stride = 0;
+        stride_confidence = 0;
+        lru = 0;
+    }
+};
+
+IP_TRACKER trackers[IP_TRACKER_COUNT];
+
+struct SpatialPattern {
+    uint64_t base_addr;
+    uint64_t pattern_mask;
+    uint32_t access_count;
+    
+    SpatialPattern() {
+        base_addr = 0;
+        pattern_mask = 0;
+        access_count = 0;
+    }
+};
+
+SpatialPattern spatial_patterns[SPATIAL_PATTERN_SIZE];
+uint32_t spatial_pattern_lru[SPATIAL_PATTERN_SIZE];
+
+void CACHE::l2c_prefetcher_initialize() 
+{
+    cout << "CPU " << cpu << " L2C Task3 Hybrid prefetcher" << endl;
+    
+    for (int i = 0; i < IP_TRACKER_COUNT; i++) {
+        trackers[i].lru = i;
+    }
+    
+    for (int i = 0; i < SPATIAL_PATTERN_SIZE; i++) {
+        spatial_pattern_lru[i] = i;
+    }
+}
+
+uint32_t CACHE::l2c_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type, uint32_t metadata_in)
+{
+    if (type == RFO) {
+        prefetch_line(ip, addr, addr + 64, FILL_L2, 0);
+    }
+    return metadata_in;
+}
+
+uint32_t CACHE::l2c_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in)
+{
+    assert(0);
+    return metadata_in;
+}
+
+void CACHE::l2c_prefetcher_final_stats()
+{
+}
+

@@ -1,0 +1,10 @@
+# 自动检测文本文件并规范化行尾
+* text=auto
+
+# Shell脚本强制使用LF行尾符（解决Windows CRLF导致的"Permission denied"错误）
+*.sh text eol=lf
+scripts/* text eol=lf
+
+# 其他需要LF的文件类型
+Makefile text eol=lf
+*.mk text eol=lf

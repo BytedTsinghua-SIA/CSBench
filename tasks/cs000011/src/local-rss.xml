@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+  <channel>
+    <title>Local Articles</title>
+    <!-- Two variants: same title, same server (assets), different URLs -->
+    <item>
+      <title>Local Test Article</title>
+      <link>assets/a.html</link>
+    </item>
+    <item>
+      <title>Local Test Article</title>
+      <link>assets/b.html</link>
+    </item>
+    <!-- Single variant group: unique title -->
+    <item>
+      <title>Unique Article</title>
+      <link>assets/unique.html</link>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,26 @@
+# tests/test_xv6_fs.py
+import pytest
+from gradelib import shell_script, assert_lines_match, check_time
+
+def test_bigfile(r):
+    r.run_qemu(shell_script(['bigfile']), timeout=180)
+    r.match(r'^wrote 65803 blocks$')
+    r.match(r'^bigfile done; ok$')
+
+@pytest.fixture(scope="module")
+def symlink_output(r):
+    r.run_qemu(shell_script(['symlinktest']), timeout=20)
+    return r.qemu.output
+
+def test_symlink_symlinks(symlink_output):
+    assert_lines_match(symlink_output, r'^test symlinks: ok$')
+
+def test_symlink_concurrent_symlinks(symlink_output):
+    assert_lines_match(symlink_output, r'^test concurrent symlinks: ok$')
+
+def test_usertests(r):
+    r.run_qemu(shell_script(['usertests']), timeout=360)
+    r.match(r'^ALL TESTS PASSED$')
+
+def test_time():
+    check_time()

@@ -1,0 +1,15 @@
+build/
+__pycache__/
+.DS_Store
+.env*
+!.env.example
+temp*
+logs/
+reports/
+gt_patches
+.Trash
+*.zip
+*.csv
+!tasks/
+!tasks/**
+tasks/**/build/

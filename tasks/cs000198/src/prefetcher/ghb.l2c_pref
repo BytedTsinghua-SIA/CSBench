@@ -1,0 +1,72 @@
+#include "cache.h"
+
+#define GHB_SIZE 256
+#define DCT_SIZE 256
+#define MAX_DELTA_SEQUENCE 8
+#define PREFETCH_DEGREE 2
+
+struct GHB_Entry {
+    uint64_t addr;
+    uint32_t next;
+    
+    GHB_Entry() {
+        addr = 0;
+        next = 0;
+    }
+};
+
+struct DCT_Entry {
+    int64_t delta;
+    uint32_t ghb_index;
+    uint32_t lru;
+    
+    DCT_Entry() {
+        delta = 0;
+        ghb_index = 0;
+        lru = 0;
+    }
+};
+
+GHB_Entry ghb[GHB_SIZE];
+DCT_Entry dct[DCT_SIZE];
+uint32_t ghb_head;
+uint32_t dct_lru_counter;
+
+void CACHE::l2c_prefetcher_initialize() 
+{
+    cout << "CPU " << cpu << " L2C GHB prefetcher" << endl;
+    
+    ghb_head = 0;
+    dct_lru_counter = 0;
+    
+    for (int i = 0; i < GHB_SIZE; i++) {
+        ghb[i].addr = 0;
+        ghb[i].next = 0;
+    }
+    
+    for (int i = 0; i < DCT_SIZE; i++) {
+        dct[i].delta = 0;
+        dct[i].ghb_index = 0;
+        dct[i].lru = i;
+    }
+}
+
+uint32_t CACHE::l2c_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type, uint32_t metadata_in)
+{
+    if (type == RFO) {
+        prefetch_line(ip, addr, addr + 64, FILL_L2, 0);
+    }
+    return metadata_in;
+}
+
+uint32_t CACHE::l2c_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in)
+{
+    assert(0);
+    return metadata_in;
+}
+
+void CACHE::l2c_prefetcher_final_stats()
+{
+    cout << "CPU " << cpu << " L2C GHB prefetcher final stats" << endl;
+}
+

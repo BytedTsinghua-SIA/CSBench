@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+  <channel>
+    <title>Local Dup Articles</title>
+    <!-- Same URL appears twice; should be deduped by processedURLs -->
+    <item>
+      <title>Unique Article Duplicate</title>
+      <link>assets/unique.html</link>
+    </item>
+    <item>
+      <title>Unique Article Duplicate</title>
+      <link>assets/unique.html</link>
+    </item>
+  </channel>
+</rss>

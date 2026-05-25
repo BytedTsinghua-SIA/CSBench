@@ -1,0 +1,8 @@
+loguru
+pandas
+litellm
+dotenv
+httpx[socks]==0.23.1
+pytest
+tenacity
+rich

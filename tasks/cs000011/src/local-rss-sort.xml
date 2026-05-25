@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+  <channel>
+    <title>Local Sort Articles</title>
+    <item>
+      <title>Sort Test A</title>
+      <link>assets/c.html</link>
+    </item>
+    <item>
+      <title>Sort Test B</title>
+      <link>assets/d.html</link>
+    </item>
+  </channel>
+</rss>

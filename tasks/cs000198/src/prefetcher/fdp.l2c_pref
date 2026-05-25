@@ -1,0 +1,94 @@
+#include "cache.h"
+
+#define IP_TRACKER_COUNT 1024
+#define MAX_AGGRESSIVENESS 5
+#define COUNTER_MAX 31
+#define COUNTER_MIN 0
+
+struct AggressivenessConfig {
+    int distance;
+    int degree;
+};
+
+class IP_TRACKER {
+public:
+    uint64_t ip;
+    uint64_t last_cl_addr;
+    int64_t last_stride;
+    uint32_t feedback_counter;
+    uint32_t lru;
+    uint64_t prefetch_count;
+    uint64_t useful_count;
+    uint64_t late_count;
+    
+    IP_TRACKER() {
+        ip = 0;
+        last_cl_addr = 0;
+        last_stride = 0;
+        feedback_counter = 16;
+        lru = 0;
+        prefetch_count = 0;
+        useful_count = 0;
+        late_count = 0;
+    }
+};
+
+IP_TRACKER trackers[IP_TRACKER_COUNT];
+
+struct PrefetchInfo {
+    uint64_t addr;
+    uint64_t ip;
+    uint64_t cycle;
+    bool useful;
+    bool late;
+    
+    PrefetchInfo() {
+        addr = 0;
+        ip = 0;
+        cycle = 0;
+        useful = false;
+        late = false;
+    }
+};
+
+#define PREFETCH_TRACKER_SIZE 256
+PrefetchInfo prefetch_tracker[PREFETCH_TRACKER_SIZE];
+uint32_t prefetch_tracker_head;
+
+void CACHE::l2c_prefetcher_initialize() 
+{
+    cout << "CPU " << cpu << " L2C FDP prefetcher" << endl;
+    
+    prefetch_tracker_head = 0;
+    
+    for (int i = 0; i < IP_TRACKER_COUNT; i++) {
+        trackers[i].lru = i;
+    }
+    
+    for (int i = 0; i < PREFETCH_TRACKER_SIZE; i++) {
+        prefetch_tracker[i].addr = 0;
+        prefetch_tracker[i].cycle = 0;
+        prefetch_tracker[i].useful = false;
+        prefetch_tracker[i].late = false;
+    }
+}
+
+uint32_t CACHE::l2c_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type, uint32_t metadata_in)
+{
+    if (type == RFO) {
+        prefetch_line(ip, addr, addr + 64, FILL_L2, 0);
+    }
+    return metadata_in;
+}
+
+uint32_t CACHE::l2c_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in)
+{
+    assert(0);
+    return metadata_in;
+}
+
+void CACHE::l2c_prefetcher_final_stats()
+{
+    cout << "CPU " << cpu << " L2C FDP prefetcher final stats" << endl;
+}
+

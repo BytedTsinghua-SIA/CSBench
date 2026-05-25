@@ -1,0 +1,97 @@
+## Exercise 6: Additional Vulnerabilities
+
+### Vulnerability 1: Format String Vulnerability in Environment Variable Construction
+
+**Location**: `http.c`, `http_request_line()` function (lines 94-95, 101, 109)
+
+**Description**:
+The function uses `sprintf()` to construct environment variable strings without bounds checking on the `env` buffer. While `env` is declared as `static char env[8192]` in `zookd.c`, the code doesn't verify that the total size of environment strings doesn't exceed this buffer. Multiple `sprintf()` calls increment `envp` pointer without checking if it exceeds `env + sizeof(env)`.
+
+**Why it works**:
+- `sprintf()` writes data to the buffer pointed to by `envp`
+- The pointer `envp` is incremented after each `sprintf()` call without bounds checking
+- An attacker can control the `REQUEST_METHOD`, `SERVER_PROTOCOL`, and `QUERY_STRING` values
+- If these values are long enough, they can cause buffer overflow in the `env` buffer
+- Additionally, format string specifiers in attacker-controlled input (like `%n`) could be exploited if format string vulnerabilities exist in code that processes these environment variables
+
+**What an attacker can accomplish**:
+- Buffer overflow in the `env` buffer if total environment string size exceeds 8192 bytes
+- Potential format string attacks if downstream code uses these environment variables with `printf()`-like functions
+- Memory corruption leading to arbitrary code execution
+
+**Limitations**:
+- Requires precise control over HTTP request line and query string
+- Static buffer size is relatively large (8192 bytes), making overflow harder
+- Limited by HTTP protocol constraints on line length
+
+**How to fix**:
+- Check remaining buffer space before each `sprintf()` call
+- Use `snprintf()` instead of `sprintf()` with explicit bounds
+- Verify `envp - env < sizeof(env) - 1` before each write
+- Return error if buffer would overflow
+
+---
+
+### Vulnerability 2: Path Traversal (Directory Traversal)
+
+**Location**: `http.c`, `http_serve()` function (lines 279-286)
+
+**Description**:
+The function constructs a file path by concatenating the current working directory (`getcwd()`) with the user-supplied path (`name` parameter). The code checks if the combined path length exceeds the buffer size, but does not validate that the path doesn't contain directory traversal sequences like `../` or `..\\`.
+
+**Why it works**:
+- The `name` parameter comes directly from `REQUEST_URI` environment variable
+- This is constructed from the URL path in the HTTP request
+- An attacker can send requests like `GET /../../../etc/passwd HTTP/1.0`
+- After URL decoding and path construction, this could access files outside the document root
+- The `split_path()` function may help some, but doesn't prevent all traversal attempts
+
+**What an attacker can accomplish**:
+- Read arbitrary files on the server filesystem (e.g., `/etc/passwd`, `/home/student/.ssh/id_rsa`)
+- Access configuration files containing sensitive information
+- Potential information disclosure leading to further attacks
+- Read source code or other sensitive application files
+
+**Limitations**:
+- Requires knowledge of target file paths
+- File permissions still apply (must be readable by server process)
+- Some paths may be blocked by filesystem permissions
+
+**How to fix**:
+- Validate that the final resolved path stays within the document root
+- Use `realpath()` to resolve canonical path and verify it starts with document root
+- Strip or reject path components containing `..` or `.`
+- Implement path normalization before processing
+- Check that no path component equals `..` after splitting by `/`
+
+---
+
+### Vulnerability 3: Integer Overflow in Path Length Check
+
+**Location**: `http.c`, `http_serve()` function (line 282)
+
+**Description**:
+The code checks `if (strlen(name) + strlen(pn) + 1 >= sizeof(pn))` to prevent buffer overflow. However, if `strlen(name)` and `strlen(pn)` are very large values close to `SIZE_MAX`, their addition could overflow, causing the check to pass incorrectly and allow buffer overflow.
+
+**Why it works**:
+- `strlen()` returns `size_t`, which is an unsigned type
+- Unsigned integer arithmetic wraps around on overflow
+- If `strlen(name) + strlen(pn) + 1` overflows and wraps to a small value
+- The check `>= sizeof(pn)` might incorrectly evaluate to false
+- `strncat()` would then write beyond the buffer boundary
+
+**What an attacker can accomplish**:
+- Buffer overflow in the `pn` buffer (2048 bytes)
+- Potential stack corruption and code execution
+- Crash the server process
+
+**Limitations**:
+- Requires very specific length values to trigger overflow
+- Practical exploitation is difficult due to HTTP protocol length limits
+- Modern systems have larger address spaces making overflow less likely
+
+**How to fix**:
+- Check for potential overflow before addition: `if (strlen(name) > SIZE_MAX - strlen(pn) - 1)`
+- Or use `strncat()` with explicit remaining buffer size calculation
+- Validate individual string lengths before concatenation
+- Use safer string functions that enforce bounds checking
