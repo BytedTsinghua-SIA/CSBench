@@ -1,0 +1,37 @@
+schema_version = "1.4"
+
+[task]
+name = "csbench/cs000126"
+version = "1.0.0"
+description = "CSBench task cs000126: Data Science"
+authors = []
+keywords = ["csbench", "spec-to-code", "repository-level"]
+
+[metadata]
+task_id = "cs000126"
+domain = "Application"
+topic = "Data Science"
+languages = ["Python"]
+difficulty = "medium"
+base_commit = "d26561f07d65e8c2d4ccb4a7b09691414e3a96ce"
+image_compatibility = "original-csbench-image"
+
+[verifier]
+timeout_sec = 2400.0
+user = "root"
+
+[agent]
+timeout_sec = 7200.0
+user = "root"
+
+[environment]
+docker_image = "docker.io/honglifish/csbench:cs000126"
+os = "linux"
+workdir = "/testbed"
+network_mode = "public"
+gpus = 0
+mcp_servers = []
+
+[verifier.env]
+
+[solution.env]

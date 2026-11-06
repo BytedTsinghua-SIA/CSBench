@@ -1,25 +1,107 @@
-## CSBench
+# CSBench
 
 [简体中文](./README.md) | [English](./README.en.md)
 
 CSBench 是一个面向学术计算机课程任务的 Docker 基准框架，用来评估 coding agent 在真实代码仓库中的系统级端到端修复、实现和调试能力。
 
-## 快速上手
+本仓库的 `main` 分支是完整的 Harbor 兼容发行版：它保留原始 CSBench 的任务、运行器、评测逻辑和文档，同时把同一批任务发布为 Harbor task schema 1.4。用户既可以复现论文使用的原始 CodeAct 流程，也可以在不改任务镜像的情况下使用 Harbor 内置或自定义 agent。
+
+原始实验实现保留在 `origin_experiment` 分支，便于追溯历史实验；新用户建议从 `main` 开始。
+
+## 两种运行方式
+
+| 方式 | 适用场景 | 入口 |
+|---|---|---|
+| Harbor（推荐） | 使用统一 harness、更换 agent/scaffold、扩展后续实验 | `scripts/run_harbor.sh` |
+| CSBench 原始运行器 | 严格复现原始 CodeAct prompt、工具和执行循环 | `main.py` / `run.py` |
+
+两种方式共用 `tasks/` 中的任务定义和同一批 Docker 镜像。Harbor 直接引用预构建镜像，不需要增加 Harbor 专用镜像层。完整设计、支持的 agent 和验证方法见 [Harbor 使用说明](docs/HARBOR.zh-CN.md)。
+
+## Harbor 快速上手
+
+环境要求：Python 3.12+、Docker（含 Compose v2）。
+
+```bash
+git clone https://github.com/huiyeruzhou/HaneYuu.git CSBench
+cd CSBench
+scripts/bootstrap.sh
+cp .env.example .env
+```
+
+在 `.env` 中填写模型服务后，可以运行单题或整个数据集：
+
+```bash
+CSBENCH_TASK=cs000280 scripts/run_harbor.sh  # 单题
+scripts/run_harbor.sh                       # 全部任务
+```
+
+也可以直接调用 Harbor 的内置 agent。下面示例假设已按该 agent 的要求导出模型凭据：
+
+```bash
+.venv/bin/harbor run \
+  --path dataset/csbench \
+  --include-task-name cs000280 \
+  --agent mini-swe-agent \
+  --model openai/gpt-5.2
+```
+
+Codex 直接使用 Harbor 内置的 `--agent codex`，不需要 CSBench 自定义 agent。若容器不能直连 Codex 安装源，在 `.env` 中设置 `HTTP_PROXY` / `HTTPS_PROXY` 即可；入口脚本会用 Harbor 官方 `--agent-env` 参数把代理传给 setup 和 run 阶段。完整命令和 endpoint 注意事项见 [Harbor 使用说明](docs/HARBOR.zh-CN.md#codex-agent)。
+
+`dataset/csbench/` 已包含可直接运行的 Harbor 任务；`scripts/generate_dataset.py` 可从本仓的原始任务重新生成它们。任务镜像统一使用 `docker.io/honglifish/csbench:<task-id>`，发布工具默认仅做 dry run。
+
+### 多次运行、并发和命名
+
+`scripts/run_harbor.sh` 会读取 `.env`，并把额外参数原样传给 Harbor。`-k` 是每题运行次数，`-n` 是全局并发 trial 数；它们都是 Harbor 官方参数：
+
+```bash
+# cs000280 跑 2 次，最多并发 8 个 trial
+CSBENCH_TASK=cs000280 \
+CSBENCH_JOB_NAME=gpt52-mini \
+scripts/run_harbor.sh -k 2 -n 8
+```
+
+输出默认写入 `jobs/<job-name>/`。可通过 `CSBENCH_JOBS_DIR` 改输出根目录，通过 `CSBENCH_AGENT` 更换 agent。每组正式实验应使用唯一的 job name，隔离 smoke、模型和实验配置。
+
+### 查看和汇总 Harbor 结果
+
+Harbor 的官方网页查看器可以浏览 job、trial、agent trajectory、异常和 verifier 输出：
+
+```bash
+.venv/bin/harbor view jobs --jobs
+```
+
+单个 job 的 `result.json` 保存聚合状态，每个 trial 子目录中的 `result.json` 保存 task、agent/model、token/cost、异常和 verifier reward。`verifier/reward.txt` 是原始二值分数，`verifier/test-stdout.txt` 是测试输出。CSBench 额外提供一个只读汇总工具，将官方 JSON 展平为 CSV，并按 agent/model 计算通过率：
+
+```bash
+python3 scripts/summarize_harbor_results.py jobs/<job-name>
+# 等价入口
+make summarize JOB=jobs/<job-name>
+```
+
+结果写到 `jobs/<job-name>/analysis/trials.csv` 和 `summary.json`；传入整个 `jobs/` 时写到 `jobs/_analysis/`。运行和网页查看由 Harbor 官方 CLI 完成，CSV/JSON 汇总是本仓的辅助脚本。`harbor analyze` 是可选的、会额外调用模型的 trajectory 分析，不是计算基础分数所必需的步骤。
+
+完整的输出目录、字段含义、官方工具与仓库脚本边界见 [Harbor 使用说明](docs/HARBOR.zh-CN.md)。
+
+## 原始 CSBench 运行器快速上手
 
 ### 安装依赖
+
+如果已经执行过 `scripts/bootstrap.sh`，生成的 `.venv` 同时包含 Harbor adapter 和原始运行器所需依赖，可以直接使用。若需要严格复现历史依赖（包括旧版 `httpx`），请使用独立环境，避免与 Harbor 的依赖冲突：
 
 - 用 `uv` 安装
 
 ```bash
-uv venv .venv --python 3.13
-source .venv/bin/activate                     # 激活虚拟环境
+uv venv .venv-original --python 3.13
+source .venv-original/bin/activate            # 激活原始实验环境
 uv pip install -r requirements.txt            # 安装项目常用依赖
 ```
 
 - 用 `pip` 安装
 
 ```bash
-pip install -r requirements.txt     # 安装项目常用依赖
+python -m venv .venv-original
+source .venv-original/bin/activate
+pip install -r requirements.txt     # 安装原始实验依赖
 ```
 
 额外提供`requirements-freeze.txt`完整 freeze，作为复现实验环境的参考。
@@ -34,9 +116,11 @@ PROVIDER="openai"
 API_MODE="chat" # responses for latest GPT models
 API_BASE = "https://xxx/v1"
 API_KEY = "sk-xxxxxx"
-API_MODEL="claude-sonnet-4-5"
+API_MODEL="gpt-5.2"
 
 OUTPUT_ROOT="."
+DOCKER_REGISTRY="docker.io"
+DOCKER_REPOSITORY="honglifish/csbench"
 EOF
 ```
 
@@ -71,7 +155,7 @@ python3 read_report.py                # 汇总已有 reports/ 的结果
 
 ### 测试多个模型
 
-`ENV_FILE`环境变量可以用于指定自定义的环境文件。如果要运行多个模型，可以通过分别编写`.env.gpt`、`.env.claude`等文件，并修改`ENV_FILE`环境变量来实现。
+`ENV_FILE`环境变量可以用于指定自定义的环境文件。如果要运行多个模型，可以通过分别编写`.env.gpt`、`.env.glm`等文件，并修改`ENV_FILE`环境变量来实现。
 
 下面两个任务可以并发运行（只要OUTPUT_ROOT不同）：
 
@@ -79,7 +163,7 @@ python3 read_report.py                # 汇总已有 reports/ 的结果
 export ENV_FILE=.env.gpt
 python3 run.py -k 1
 
-export ENV_FILE=.env.claude
+export ENV_FILE=.env.glm
 python3 run.py -k 1
 ```
 
@@ -108,7 +192,7 @@ python3 main.py --task "[cs000007,cs000008]"    # 指定多个任务
 3. 调用 `scripts.evaluate_patch` 回放 patch 并跑测试
 4. 调用 `scripts.visualize_conversation` 产出对话可视化
 5. 持续把结果写到 `reports/`，把阶段输出写到 `logs/`
-其中镜像 registry/namespace/tag 默认来自 `.env` 里的 `DOCKER_REGISTRY` / `DOCKER_NAMESPACE` / `DOCKER_TAG`（由 `src/config.py` 读取）。
+其中公开镜像默认由 `.env` 中的 `DOCKER_REGISTRY` / `DOCKER_REPOSITORY` 解析为单仓库多 tag 布局（由 `src/config.py` 读取）；将 `DOCKER_REPOSITORY` 留空可切回历史的 namespace/task 布局。
 
 
 工程细节：
@@ -161,7 +245,7 @@ python3 read_report.py --attempts 2            # 按每题 2 次 attempt 统计�
 # OUTPUT_ROOT=.
 # BUILD_ROOT=build
 # DOCKER_REGISTRY=docker.io
-# DOCKER_NAMESPACE=honglifish/csbench
+# DOCKER_REPOSITORY=honglifish/csbench
 
 PROVIDER=openai
 API_KEY=your_key
@@ -175,9 +259,8 @@ API_BASE=
 - `OUTPUT_ROOT`：日志与报告输出目录会是 `<OUTPUT_ROOT>/logs/` 和 `<OUTPUT_ROOT>/reports/`
 - `BUILD_ROOT`：本地构建镜像时使用到的缓存目录
 - `DOCKER_REGISTRY`：镜像仓库地址
-- `DOCKER_NAMESPACE`：镜像命名空间
-- `DOCKER_TAG`：镜像 tag；默认是 `latest`
-- 完整镜像引用格式是 `<DOCKER_REGISTRY>/<DOCKER_NAMESPACE>/<task_name>:<DOCKER_TAG>`，例如 `docker.io/honglifish/csbench/cs000007:latest`
+- `DOCKER_REPOSITORY`：公开发布使用的共享 repository；每个任务使用自己的 task-ID tag。默认示例解析为 `docker.io/honglifish/csbench:cs000007`
+- `DOCKER_NAMESPACE` / `DOCKER_TAG`：仅在 `DOCKER_REPOSITORY` 留空时使用，保留历史的 `<registry>/<namespace>/<task>:<tag>` 布局
 - `PROVIDER` / `OPENAI_*`：LLM 提供方与模型配置，注意请永远使用OPENAI开头的前缀即使PROVIDER等于`anthropic`之类的。这些环境变量最终用于litellm的初始化。
 
 ## 目录约定
@@ -349,6 +432,7 @@ python3 -m scripts.visualize_conversation logs/cs000007/attempt0/conversation_hi
 - `OUTPUT_ROOT`
 - `BUILD_ROOT`
 - `DOCKER_REGISTRY`
+- `DOCKER_REPOSITORY`
 - `DOCKER_NAMESPACE`
 
 ### `src/task/`
@@ -356,7 +440,7 @@ python3 -m scripts.visualize_conversation logs/cs000007/attempt0/conversation_hi
 任务抽象层。`BenchTask` 负责：
 
 - 读取 `metadata/task.md`
-- 根据 `DOCKER_REGISTRY` / `DOCKER_NAMESPACE` / `DOCKER_TAG` 解析 task 对应的镜像引用
+- 根据 `DOCKER_REGISTRY` / `DOCKER_REPOSITORY` 解析公开的单仓库多 tag 镜像引用，同时兼容历史的 `DOCKER_NAMESPACE` / `DOCKER_TAG` 布局
 - 在镜像内执行 `git rev-parse HEAD`，把 `/testbed` 的 `HEAD` 作为 `base_commit`
 - 提供 task 对应的日志路径等辅助能力
 
@@ -392,5 +476,5 @@ TASK_ROOT=/path/to/tasks
 OUTPUT_ROOT=/path/to/output
 BUILD_ROOT=/path/to/build-root
 DOCKER_REGISTRY=your-registry.example.com
-DOCKER_NAMESPACE=your-namespace
+DOCKER_REPOSITORY=your-namespace/csbench
 ```

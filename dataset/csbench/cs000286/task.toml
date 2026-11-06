@@ -1,0 +1,37 @@
+schema_version = "1.4"
+
+[task]
+name = "csbench/cs000286"
+version = "1.0.0"
+description = "CSBench task cs000286: Deep Learning"
+authors = []
+keywords = ["csbench", "spec-to-code", "repository-level"]
+
+[metadata]
+task_id = "cs000286"
+domain = "AI"
+topic = "Deep Learning"
+languages = ["Python"]
+difficulty = "medium"
+base_commit = "77b988a6e9839d0f10704327a60f11b069e4b485"
+image_compatibility = "original-csbench-image"
+
+[verifier]
+timeout_sec = 2400.0
+user = "root"
+
+[agent]
+timeout_sec = 7200.0
+user = "root"
+
+[environment]
+docker_image = "docker.io/honglifish/csbench:cs000286"
+os = "linux"
+workdir = "/testbed"
+network_mode = "public"
+gpus = 0
+mcp_servers = []
+
+[verifier.env]
+
+[solution.env]

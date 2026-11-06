@@ -1,0 +1,37 @@
+schema_version = "1.4"
+
+[task]
+name = "csbench/cs000275"
+version = "1.0.0"
+description = "CSBench task cs000275: Programming Fundamentals"
+authors = []
+keywords = ["csbench", "spec-to-code", "repository-level"]
+
+[metadata]
+task_id = "cs000275"
+domain = "Application"
+topic = "Programming Fundamentals"
+languages = ["C++"]
+difficulty = "easy"
+base_commit = "d5d53575323a69cdc6f14122861eb74daab0a2be"
+image_compatibility = "original-csbench-image"
+
+[verifier]
+timeout_sec = 2400.0
+user = "root"
+
+[agent]
+timeout_sec = 7200.0
+user = "root"
+
+[environment]
+docker_image = "docker.io/honglifish/csbench:cs000275"
+os = "linux"
+workdir = "/testbed"
+network_mode = "public"
+gpus = 0
+mcp_servers = []
+
+[verifier.env]
+
+[solution.env]

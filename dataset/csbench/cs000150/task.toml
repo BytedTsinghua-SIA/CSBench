@@ -1,0 +1,37 @@
+schema_version = "1.4"
+
+[task]
+name = "csbench/cs000150"
+version = "1.0.0"
+description = "CSBench task cs000150: Web Development"
+authors = []
+keywords = ["csbench", "spec-to-code", "repository-level"]
+
+[metadata]
+task_id = "cs000150"
+domain = "Application"
+topic = "Web Development"
+languages = ["JavaScript"]
+difficulty = "medium"
+base_commit = "d94e080a856b2baa36fdec4c44d2252a3c52775c"
+image_compatibility = "original-csbench-image"
+
+[verifier]
+timeout_sec = 2400.0
+user = "root"
+
+[agent]
+timeout_sec = 7200.0
+user = "root"
+
+[environment]
+docker_image = "docker.io/honglifish/csbench:cs000150"
+os = "linux"
+workdir = "/testbed"
+network_mode = "public"
+gpus = 0
+mcp_servers = []
+
+[verifier.env]
+
+[solution.env]

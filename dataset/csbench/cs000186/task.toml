@@ -1,0 +1,37 @@
+schema_version = "1.4"
+
+[task]
+name = "csbench/cs000186"
+version = "1.0.0"
+description = "CSBench task cs000186: Database System"
+authors = []
+keywords = ["csbench", "spec-to-code", "repository-level"]
+
+[metadata]
+task_id = "cs000186"
+domain = "System"
+topic = "Database System"
+languages = ["C++"]
+difficulty = "hard"
+base_commit = "85df5903b320b8744a207ec40ec831ed87a8bf8c"
+image_compatibility = "original-csbench-image"
+
+[verifier]
+timeout_sec = 2400.0
+user = "root"
+
+[agent]
+timeout_sec = 7200.0
+user = "root"
+
+[environment]
+docker_image = "docker.io/honglifish/csbench:cs000186"
+os = "linux"
+workdir = "/testbed"
+network_mode = "public"
+gpus = 0
+mcp_servers = []
+
+[verifier.env]
+
+[solution.env]

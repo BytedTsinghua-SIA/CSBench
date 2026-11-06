@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "csbench-harbor"
+version = "0.1.0"
+description = "Harbor task and agent adapters for CSBench"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "harbor>=0.20,<0.21",
+  "httpx[socks]>=0.27",
+  "litellm",
+  "loguru>=0.7",
+  "pandas",
+  "python-dotenv",
+  "rich",
+  "tenacity",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.4", "ruff>=0.15"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

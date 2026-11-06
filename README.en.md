@@ -2,27 +2,115 @@
 
 [简体中文](./README.md) | [English](./README.en.md)
 
-CSBench is a Docker-based benchmark framework for academic computer science tasks. It is used to evaluate coding agents on end-to-end system-level fixing, implementation, and debugging workflows.
+CSBench is a Docker-based benchmark framework for academic computer science tasks. It evaluates coding agents on end-to-end, system-level fixing, implementation, and debugging workflows in real repositories.
 
-## Quick Start
+The `main` branch is the complete Harbor-compatible release. It retains the original CSBench tasks, runner, evaluator, and documentation while also publishing the same tasks in Harbor task schema 1.4. Users can reproduce the paper's original CodeAct workflow or run Harbor built-in and custom agents without changing the task images.
+
+The historical experiment implementation remains available on the `origin_experiment` branch. New users should start from `main`.
+
+## Two Ways to Run CSBench
+
+| Mode | Best for | Entry point |
+|---|---|---|
+| Harbor (recommended) | A standard harness, alternative agents/scaffolds, and future extensions | `scripts/run_harbor.sh` |
+| Original CSBench runner | Exact reproduction of the original CodeAct prompt, tools, and loop | `main.py` / `run.py` |
+
+Both modes use the task definitions under `tasks/` and the same Docker images. Harbor references the prebuilt images directly; no Harbor-specific image layer is required. See the [Harbor guide](docs/HARBOR.md) for the design, supported agents, and validation procedure.
+
+## Harbor Quick Start
+
+Requirements: Python 3.12+ and Docker with Compose v2.
+
+```bash
+git clone https://github.com/huiyeruzhou/HaneYuu.git CSBench
+cd CSBench
+scripts/bootstrap.sh
+cp .env.example .env
+```
+
+After filling in the model endpoint in `.env`, run one task or the full dataset:
+
+```bash
+CSBENCH_TASK=cs000280 scripts/run_harbor.sh  # one task
+scripts/run_harbor.sh                       # all tasks
+```
+
+You can also use a Harbor built-in agent directly. This example assumes that
+the credentials required by that agent are already exported:
+
+```bash
+.venv/bin/harbor run \
+  --path dataset/csbench \
+  --include-task-name cs000280 \
+  --agent mini-swe-agent \
+  --model openai/gpt-5.2
+```
+
+Codex uses Harbor's built-in `--agent codex`; no CSBench-specific Codex agent
+is required. If a container cannot reach the Codex installation sources,
+configure `HTTP_PROXY` / `HTTPS_PROXY` in `.env`. The wrapper forwards them to
+the setup and run phases through Harbor's official `--agent-env` option. See
+the [Harbor guide](docs/HARBOR.md#codex-agent) for the complete command and
+endpoint details.
+
+`dataset/csbench/` contains ready-to-run Harbor tasks. `scripts/generate_dataset.py` can regenerate them from the original tasks included in this repository. Task images use `docker.io/honglifish/csbench:<task-id>`; the publication helper remains dry-run by default.
+
+### Repeated attempts, concurrency, and job names
+
+`scripts/run_harbor.sh` loads `.env` and forwards additional arguments to Harbor unchanged. `-k` is the number of attempts per task and `-n` is the global number of concurrent trials; both are official Harbor options:
+
+```bash
+# Run cs000280 twice, with at most 8 concurrent trials
+CSBENCH_TASK=cs000280 \
+CSBENCH_JOB_NAME=gpt52-mini \
+scripts/run_harbor.sh -k 2 -n 8
+```
+
+Outputs go to `jobs/<job-name>/` by default. Use `CSBENCH_JOBS_DIR` to change the output root and `CSBENCH_AGENT` to select another agent. Give every reportable configuration a unique job name so smoke tests, models, and configurations remain isolated.
+
+### View and summarize Harbor results
+
+Use Harbor's official web viewer to inspect jobs, trials, agent trajectories, exceptions, and verifier output:
+
+```bash
+.venv/bin/harbor view jobs --jobs
+```
+
+The job-level `result.json` stores aggregate state; each trial directory has a `result.json` with the task, agent/model, tokens/cost, exceptions, and verifier reward. `verifier/reward.txt` is the raw binary score and `verifier/test-stdout.txt` contains test output. CSBench also provides a read-only helper that flattens the official JSON into CSV and aggregates pass rates by agent/model:
+
+```bash
+python3 scripts/summarize_harbor_results.py jobs/<job-name>
+# Equivalent Make target
+make summarize JOB=jobs/<job-name>
+```
+
+For one job, it writes `analysis/trials.csv` and `analysis/summary.json`; for a `jobs/` root, it writes `jobs/_analysis/`. Execution and web viewing are official Harbor CLI features; CSV/JSON summarization is a repository helper. `harbor analyze` is an optional, additional model-based trajectory analysis and is not required to compute benchmark scores.
+
+See the [Harbor guide](docs/HARBOR.md) for the complete output tree, field semantics, and the boundary between official and repository tooling.
+
+## Original CSBench Runner Quick Start
 
 ### Install Dependencies
+
+If you already ran `scripts/bootstrap.sh`, its `.venv` contains the dependencies for both the Harbor adapter and the original runner. To reproduce the historical dependency set exactly (including the old `httpx` pin), use a separate environment so it cannot conflict with Harbor:
 
 - Install with `uv`
 
 ```bash
-uv venv .venv --python 3.13
-source .venv/bin/activate                     # Activate the virtual environment
+uv venv .venv-original --python 3.13
+source .venv-original/bin/activate            # Activate the original experiment environment
 uv pip install -r requirements.txt            # Install the common project dependencies
 ```
 
 - Install with `pip`
 
 ```bash
-pip install -r requirements.txt               # Install the common project dependencies
+python -m venv .venv-original
+source .venv-original/bin/activate
+pip install -r requirements.txt               # Install the original experiment dependencies
 ```
 
-`requirements-freeze.txt` is also provided as a full freeze exported from `/data00/home/hongli.fish/CSBench/.venv`, which can be used as a reference for reproducing the experiment environment.
+`requirements-freeze.txt` is also provided as a reference freeze for reproducing the original experiment environment.
 
 ### Configure API Access
 
@@ -32,12 +120,14 @@ OpenAI-compatible providers such as OpenRouter do not require changing `PROVIDER
 ```sh
 cat > .env <<EOF
 PROVIDER="openai"
-API_MODE="chat" # responses for latest GPT models"
+API_MODE="chat" # use "responses" for the latest GPT models
 API_BASE="https://xxx/v1"
 API_KEY="sk-xxxxxx"
-API_MODEL="claude-sonnet-4-5"
+API_MODEL="gpt-5.2"
 
 OUTPUT_ROOT="."
+DOCKER_REGISTRY="docker.io"
+DOCKER_REPOSITORY="honglifish/csbench"
 EOF
 ```
 
@@ -73,7 +163,7 @@ After a run, the most useful places to check are:
 
 ### Test Multiple Models
 
-The `ENV_FILE` environment variable can be used to point to a custom env file. To test multiple models, you can maintain files such as `.env.gpt` and `.env.claude`, then switch `ENV_FILE` before running.
+The `ENV_FILE` environment variable can be used to point to a custom env file. To test multiple models, you can maintain files such as `.env.gpt` and `.env.glm`, then switch `ENV_FILE` before running.
 
 The following two runs can execute in parallel as long as they use different `OUTPUT_ROOT` values:
 
@@ -81,7 +171,7 @@ The following two runs can execute in parallel as long as they use different `OU
 export ENV_FILE=.env.gpt
 python3 run.py -k 1
 
-export ENV_FILE=.env.claude
+export ENV_FILE=.env.glm
 python3 run.py -k 1
 ```
 
@@ -112,7 +202,7 @@ Parameter summary:
 4. Invoke `scripts.visualize_conversation` to generate an HTML visualization
 5. Continuously write reports into `reports/` and stage outputs into `logs/`
 
-Image registry/namespace/tag default to `DOCKER_REGISTRY` / `DOCKER_NAMESPACE` / `DOCKER_TAG` loaded by `src/config.py` from `.env`.
+Public images use the shared-repository layout resolved from `DOCKER_REGISTRY` / `DOCKER_REPOSITORY` in `.env`. Leave `DOCKER_REPOSITORY` empty to restore the historical namespace/task layout.
 
 Engineering details:
 
@@ -163,7 +253,7 @@ The project automatically reads `.env` at startup. A typical configuration looks
 # OUTPUT_ROOT=.
 # BUILD_ROOT=build
 # DOCKER_REGISTRY=docker.io
-# DOCKER_NAMESPACE=honglifish/csbench
+# DOCKER_REPOSITORY=honglifish/csbench
 
 PROVIDER=openai
 API_KEY=your_key
@@ -177,9 +267,8 @@ Common config fields:
 - `OUTPUT_ROOT`: output root; logs and reports will be stored under `<OUTPUT_ROOT>/logs/` and `<OUTPUT_ROOT>/reports/`
 - `BUILD_ROOT`: cache/staging directory used during local Docker image builds
 - `DOCKER_REGISTRY`: Docker registry hostname
-- `DOCKER_NAMESPACE`: Docker namespace
-- `DOCKER_TAG`: Docker image tag; defaults to `latest`
-- Full image references look like `<DOCKER_REGISTRY>/<DOCKER_NAMESPACE>/<task_name>:<DOCKER_TAG>`, for example `docker.io/honglifish/csbench/cs000007:latest`
+- `DOCKER_REPOSITORY`: shared repository used by the public release; each task uses its task ID as the tag. The default example resolves to `docker.io/honglifish/csbench:cs000007`
+- `DOCKER_NAMESPACE` / `DOCKER_TAG`: used only when `DOCKER_REPOSITORY` is empty, preserving the historical `<registry>/<namespace>/<task>:<tag>` layout
 - `PROVIDER` / `OPENAI_*`: LLM provider and model configuration; keep the `OPENAI_` prefix even when using non-OpenAI providers, because these variables are consumed by `litellm`
 
 ## Directory Conventions
@@ -349,6 +438,7 @@ Centralizes global paths and environment variables, such as:
 - `OUTPUT_ROOT`
 - `BUILD_ROOT`
 - `DOCKER_REGISTRY`
+- `DOCKER_REPOSITORY`
 - `DOCKER_NAMESPACE`
 - `DOCKER_TAG`
 
@@ -357,7 +447,7 @@ Centralizes global paths and environment variables, such as:
 Task abstraction layer. `BenchTask` is responsible for:
 
 - Reading `metadata/task.md`
-- Resolving the task image reference from `DOCKER_REGISTRY` / `DOCKER_NAMESPACE` / `DOCKER_TAG`
+- Resolving the public shared-repository image from `DOCKER_REGISTRY` / `DOCKER_REPOSITORY`, while retaining compatibility with the historical `DOCKER_NAMESPACE` / `DOCKER_TAG` layout
 - Running `git rev-parse HEAD` inside the image and treating `/testbed`'s `HEAD` as the task's `base_commit`
 - Providing log-directory and task-related helper paths
 
@@ -393,5 +483,5 @@ TASK_ROOT=/path/to/tasks
 OUTPUT_ROOT=/path/to/output
 BUILD_ROOT=/path/to/build-root
 DOCKER_REGISTRY=your-registry.example.com
-DOCKER_NAMESPACE=your-namespace
+DOCKER_REPOSITORY=your-namespace/csbench
 ```

@@ -1,0 +1,9 @@
+{
+  "format": "Harbor task schema 1.4",
+  "task_count": 100,
+  "metadata_source": "dataset_manifest.csv",
+  "metadata_sha256": "15a66c13ad3b047c422fd2e890ee8567adcf51eac2fe563ab58ca3ddc1b86fdf",
+  "docker_repository": "docker.io/honglifish/csbench",
+  "image_template": null,
+  "manifest_sha256": "15a66c13ad3b047c422fd2e890ee8567adcf51eac2fe563ab58ca3ddc1b86fdf"
+}

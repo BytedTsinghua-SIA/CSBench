@@ -29,6 +29,7 @@ from typing import Optional, Sequence
 from src.config import (
     BUILD_ROOT,
     DOCKER_NAMESPACE,
+    DOCKER_REPOSITORY,
     DOCKER_REGISTRY,
     DOCKER_TAG,
     get_default_image_name,
@@ -90,8 +91,11 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--tag",
-        default=DOCKER_TAG,
-        help="Docker image tag",
+        default=None,
+        help=(
+            "Docker image tag; defaults to the task ID for the shared "
+            "DOCKER_REPOSITORY layout, otherwise DOCKER_TAG"
+        ),
     )
     parser.add_argument(
         "--dockerfile",
@@ -290,7 +294,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.registry != DOCKER_REGISTRY or args.namespace != DOCKER_NAMESPACE:
         default_image = f"{args.registry.rstrip('/')}/{args.namespace}/{homework_name}"
     image = args.image or default_image
-    tag = args.tag
+    uses_default_shared_repository = bool(DOCKER_REPOSITORY) and not args.image and (
+        args.registry == DOCKER_REGISTRY and args.namespace == DOCKER_NAMESPACE
+    )
+    tag = args.tag or (homework_name if uses_default_shared_repository else DOCKER_TAG)
 
     dockerfile_src = (
         Path(args.dockerfile).resolve()

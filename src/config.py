@@ -1,4 +1,3 @@
-# Copyright (c) 2025 ByteDance Ltd. and/or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 """
 CSBench configuration module.
@@ -25,6 +24,7 @@ TASKS_DIR = Path(os.getenv("TASK_ROOT", "tasks")).resolve()
 BUILD_ROOT = Path(os.getenv("BUILD_ROOT", "build")).resolve()
 DOCKER_REGISTRY = os.getenv("DOCKER_REGISTRY", "docker.io")
 DOCKER_NAMESPACE = os.getenv("DOCKER_NAMESPACE", "honglifish/csbench")
+DOCKER_REPOSITORY = os.getenv("DOCKER_REPOSITORY", "").strip("/")
 DOCKER_TAG = os.getenv("DOCKER_TAG", "latest")
 
 
@@ -86,9 +86,14 @@ def get_default_image_name(task_name: str, tag: str | None = None) -> str:
         tag: Optional image tag. If omitted, returns the image repository only.
 
     Returns:
-        Image name like registry/namespace/task_name[:tag]
+        With ``DOCKER_REPOSITORY`` set, the shared repository name is returned
+        and tasks are selected by tag. Otherwise the historical per-task
+        repository layout is used.
     """
-    image = f"{DOCKER_REGISTRY.rstrip('/')}/{DOCKER_NAMESPACE}/{task_name}"
+    if DOCKER_REPOSITORY:
+        image = f"{DOCKER_REGISTRY.rstrip('/')}/{DOCKER_REPOSITORY}"
+    else:
+        image = f"{DOCKER_REGISTRY.rstrip('/')}/{DOCKER_NAMESPACE}/{task_name}"
     if tag is None:
         return image
     return f"{image}:{tag}"
@@ -101,9 +106,11 @@ def get_default_image_ref(task_name: str, tag: str | None = None) -> str:
         tag: Optional image tag. If omitted, uses DOCKER_TAG.
 
     Returns:
-        Image reference like registry/namespace/task_name:tag
+        Image reference using either ``registry/repository:task_name`` or the
+        historical ``registry/namespace/task_name:tag`` layout.
     """
-    return get_default_image_name(task_name, tag or DOCKER_TAG)
+    effective_tag = tag or (task_name if DOCKER_REPOSITORY else DOCKER_TAG)
+    return get_default_image_name(task_name, effective_tag)
 
 def get_test_override_dir(task_name: str) -> Path:
     """Get the test_override directory for a task.

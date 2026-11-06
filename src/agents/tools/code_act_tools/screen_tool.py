@@ -1,4 +1,3 @@
-# Copyright (c) 2025 ByteDance Ltd. and/or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 from src.agents.tools.base_tool import BaseTool
 from src.runtime.base_runtime import BaseRuntime, StatefulRuntime

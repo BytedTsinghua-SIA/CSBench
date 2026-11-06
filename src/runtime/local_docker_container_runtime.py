@@ -1,4 +1,3 @@
-# Copyright (c) 2025 ByteDance Ltd. and/or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
@@ -354,4 +353,3 @@ if __name__ == "__main__":
     finally:
         print("[Example 2] Stopping container …")
         rt2.stop()
-

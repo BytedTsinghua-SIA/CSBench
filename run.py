@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# Copyright (c) 2025 ByteDance Ltd. and/or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 """
 每个attempt都是一个不断派发子进程的线程

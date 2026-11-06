@@ -1,0 +1,37 @@
+schema_version = "1.4"
+
+[task]
+name = "csbench/cs000009"
+version = "1.0.0"
+description = "CSBench task cs000009: System Fundamentals"
+authors = []
+keywords = ["csbench", "spec-to-code", "repository-level"]
+
+[metadata]
+task_id = "cs000009"
+domain = "System"
+topic = "System Fundamentals"
+languages = ["C++", "Python", "C"]
+difficulty = "hard"
+base_commit = "b6f7674354b988f7eaff564e605dc7c2694bb7e6"
+image_compatibility = "original-csbench-image"
+
+[verifier]
+timeout_sec = 2400.0
+user = "root"
+
+[agent]
+timeout_sec = 7200.0
+user = "root"
+
+[environment]
+docker_image = "docker.io/honglifish/csbench:cs000009"
+os = "linux"
+workdir = "/testbed"
+network_mode = "public"
+gpus = 0
+mcp_servers = []
+
+[verifier.env]
+
+[solution.env]
